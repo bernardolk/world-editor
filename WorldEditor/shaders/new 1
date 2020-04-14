@@ -1,0 +1,14 @@
+
+
+ * triangle-ray intersection algorithm depends on triangle orientation. Can i understand why? Should i make it work for whatever orientation? Or is it unnecessary?
+ 
+ * Making it work, it`s time to select objects (create new editor state variable) and enable movement of them through the GUI_controls 
+	(if any entity selected, show control window)
+ 
+ * Then, make it possible to move them using the mouse
+ 
+ ---------------
+ 
+ * render light placeholders in scene
+ 
+ * make lights selectable as well, and edit their color behaviour

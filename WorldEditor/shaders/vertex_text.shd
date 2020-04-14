@@ -1,0 +1,11 @@
+#version 330 core
+layout (location = 0) in vec4 vertex; // <coords, textCoords>
+out vec2 texture_coords;
+uniform mat4 projection;	//ortho
+
+void main()
+{
+   gl_Position = projection * vec4(vertex.xy, 0.0, 1.0);	// we set the text at the z-plane with 1 perspective propriety 
+   texture_coords = vertex.zw;
+   //gl_Position = vec4(vertex.xy, -0.5, 1.0);
+}

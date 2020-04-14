@@ -1,0 +1,10 @@
+WorldEditor/Assets
+
+.vs/
+*.user
+*.cache
+*.dll
+*.tlb
+*.pdb
+*.exe
+*.msi
