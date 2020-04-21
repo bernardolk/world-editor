@@ -49,6 +49,8 @@ public:
 
     Model(Mesh mesh) {
         this->meshes.push_back(mesh);
+        calculate_bounding_box();
+        setup_bounding_box_mesh();
     }
 
     // draws the model, and thus all its meshes
@@ -154,7 +156,13 @@ private:
             return;
         }
         // retrieve the directory path of the filepath
-        directory = path.substr(0, path.find_last_of('/'));
+        std::size_t ind = path.find_last_of('/');
+        if(ind != std::string::npos)
+            directory = path.substr(0, ind);
+        else {
+            ind = path.find_last_of('\\');
+            directory = path.substr(0, ind);
+        }
         // process ASSIMP's root node recursively
         processNode(scene->mRootNode, scene);
     }
@@ -303,9 +311,9 @@ unsigned int load_texture_from_file(const char* filename, const string& director
     else
         path = directory + "/" + name;
 
-    if (directory == "assets/models/stone_wall") {
-        path = "assets/models/stone_wall/texture/ruins.jpg";
-    }
+    //if (directory == "assets/models/stone_wall") {
+    //    path = "assets/models/stone_wall/texture/ruins.jpg";
+    //}
 
     unsigned int textureID;
     glGenTextures(1, &textureID);

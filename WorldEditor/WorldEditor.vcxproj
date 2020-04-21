@@ -76,7 +76,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>C:\OpenGL\includes;C:\Repositorios\WorldEditor\WorldEditor;C:\Repositorios\WorldEditor;$(IncludePath)</IncludePath>
+    <IncludePath>C:\OpenGL\includes;C:\Repositorios\world-editor\WorldEditor;C:\Repositorios\world-editor;$(IncludePath)</IncludePath>
     <LibraryPath>C:\OpenGL\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -145,6 +145,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\glad.c" />
+    <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Editor.cpp" />
+    <ClCompile Include="Entities.cpp" />
+    <ClCompile Include="file_browser.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
     <ClCompile Include="imgui\imgui_draw.cpp" />
@@ -159,6 +163,10 @@
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</DeploymentContent>
     </ClInclude>
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Editor.h" />
+    <ClInclude Include="Entities.h" />
+    <ClInclude Include="file_browser_modal.h" />
+    <ClInclude Include="Game.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_glfw.h" />
