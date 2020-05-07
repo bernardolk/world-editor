@@ -1,16 +1,19 @@
 #pragma once
 
+#include<glm/glm.hpp>
+
+
 struct Camera {
-	glm::vec3 Position;					//camera Initial world-space coordinates
-	glm::vec3 Front;					//unit vector for where the camera is facing
-	glm::vec3 Up;						//y-axis @careful this is fragile as this assumes we will never roll the camera (player is always straight up)
-	float Acceleration;					//distance over seconds squared to get constant velocity over variable time per frame
-	float FOVy;
-	float FarPlane;
-	float NearPlane;
-	float Sensitivity;
-	float Yaw;
-	float Pitch;
+	glm::vec3 Position = glm::vec3(0.0f, 3.0f, 0.0f);
+	glm::vec3 Front = glm::vec3(0.0f, 0.0f, -1.0f);
+	glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);
+	float Acceleration = 10.0f;
+	float FOVy = 45.0f;
+	float FarPlane = 300.0f;
+	float NearPlane = 0.1f;
+	float Sensitivity = 0.1f;
+	float Yaw = 0.0f;
+	float Pitch = 0.0f;
 	glm::mat4 View4x4;
 	glm::mat4 Projection4x4;
 };

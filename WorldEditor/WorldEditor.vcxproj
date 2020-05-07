@@ -146,8 +146,6 @@
   <ItemGroup>
     <ClCompile Include="..\glad.c" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Editor.cpp" />
-    <ClCompile Include="Entities.cpp" />
     <ClCompile Include="file_browser.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
     <ClCompile Include="imgui\imgui_demo.cpp" />
@@ -166,7 +164,6 @@
     <ClInclude Include="Editor.h" />
     <ClInclude Include="Entities.h" />
     <ClInclude Include="file_browser_modal.h" />
-    <ClInclude Include="Game.h" />
     <ClInclude Include="imgui\imconfig.h" />
     <ClInclude Include="imgui\imgui.h" />
     <ClInclude Include="imgui\imgui_impl_glfw.h" />

@@ -1,27 +1,10 @@
+#pragma once
 #include<Camera.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext/vector_float2.hpp> // vec2
 #include <glm/ext/vector_float3.hpp> // vec3
-#include <glm/ext/matrix_float4x4.hpp> // mat4x4
-#include <glm/ext/matrix_transform.hpp> // translate, rotate, scale, identity
 #include <glm/gtx/compatibility.hpp>
-#include <glm/gtc/type_ptr.hpp>
-
-struct Camera {
-	glm::vec3 Position = glm::vec3(0.0f, 3.0f, 0.0f);				
-	glm::vec3 Front = glm::vec3(0.0f, 0.0f, -1.0f);					
-	glm::vec3 Up = glm::vec3(0.0f, 1.0f, 0.0f);						
-	float Acceleration = 10.0f;										
-	float FOVy = 45.0f;
-	float FarPlane = 300.0f;
-	float NearPlane = 0.1f;
-	float Sensitivity = 0.1f;
-	float Yaw = 0.0f;
-	float Pitch = 0.0f;
-	glm::mat4 View4x4;
-	glm::mat4 Projection4x4;
-};
 
 
 void camera_update(Camera& camera, float viewportWidth, float viewportHeight) {

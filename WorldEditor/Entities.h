@@ -1,16 +1,5 @@
 #pragma once
 
-#include <Entities.h>
-#include <Model.h>
-#include <Shader.h>
-
-#include <glm/glm.hpp>
-#include <glm/ext/vector_float2.hpp> // vec2
-#include <glm/ext/vector_float3.hpp> // vec3
-#include <glm/ext/matrix_float4x4.hpp> // mat4x4
-#include <glm/ext/matrix_transform.hpp> // translate, rotate, scale, identity
-#include <glm/gtx/compatibility.hpp>
-#include <glm/gtc/type_ptr.hpp>
 
 const glm::mat4 mat4identity(
 	1.0f, 0.0f, 0.0f, 0.0f,
@@ -63,3 +52,13 @@ struct DirectionalLight {
 	glm::vec3 specular;
 	glm::vec3 ambient;
 };
+
+struct Scene {
+	int id;
+	std::vector<Entity> entities;
+	std::vector<SpotLight> spotLights;
+	std::vector<DirectionalLight> directionalLights;
+	std::vector<PointLight> pointLights;
+	//vector<LightEntity> lights;
+};
+
