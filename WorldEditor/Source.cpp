@@ -3,21 +3,18 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-//
 #include <glm/ext/vector_float2.hpp> // vec2
 #include <glm/ext/vector_float3.hpp> // vec3
 #include <glm/ext/matrix_float4x4.hpp> // mat4x4
 #include <glm/ext/matrix_transform.hpp> // translate, rotate, scale, identity
 #include <glm/gtx/compatibility.hpp>
 #include <glm/gtc/type_ptr.hpp>
-//
 #include <iostream>
 #include <map>
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-//
+#include <string>
 
 #include <Shader.h>
 #include <Mesh.h>
@@ -25,16 +22,16 @@
 #include <Camera.h>
 #include <Entities.h>
 
-//
-//
 #define glCheckError() glCheckError_(__FILE__, __LINE__) 
-//
-using namespace std;
+
 using namespace glm;
 
 
 const float PI = 3.141592;
 
+typedef unsigned short int u16;
+typedef unsigned int u32;
+typedef unsigned long int u64;
 
 ////______________ ..:;Shader settings;:.. ______________
 float global_shininess = 32.0f;
@@ -54,7 +51,6 @@ void onMouseBtn(GLFWwindow* window, int button, int action, int mods);
 void render_ray();
 void render_scene();
 void update_scene_objects();
-void update_entity(Entity* entity);
 void render_scene_lights();
 GLenum glCheckError_(const char* file, int line);
 
@@ -69,8 +65,11 @@ double currentMouseX;
 double currentMouseY;
 Scene* active_scene;
 Camera active_camera;
-const float viewportWidth = 1200;
-const float viewportHeight = 675;
+//const float viewportWidth = 1200;
+//const float viewportHeight = 675;
+
+const float viewportWidth = 1980;
+const float viewportHeight = 1080;
 
 
 const string textures_path = "assets/textures/";
@@ -79,8 +78,7 @@ const string fonts_path = "assets/fonts/";
 
 
 #include <Editor.h>
-
-
+#include <Model_new.h>
 
 
 int main() {
@@ -94,12 +92,12 @@ int main() {
 	glEnable(GL_DEPTH_TEST);
 
 	// Main shaders
-	Shader model_shader("shaders/vertex_model.shd", "shaders/fragment_model.shd");
-	model_shader = Shader("shaders/vertex_model.shd", "shaders/fragment_multiple_lights.shd");
+	//Shader model_shader("shaders/vertex_model.shd", "shaders/fragment_model.shd");
+	model_shader = create_shader_program("Model Shader", "shaders/vertex_model.shd", "shaders/fragment_multiple_lights.shd");
 	//Shader cube_shader("shaders/vertex_main.shd", "shaders/fragment_main.shd");
-	Shader obj_shader("shaders/vertex_color_cube.shd", "shaders/fragment_multiple_lights.shd");
-	Shader light_shader("shaders/vertex_color_cube.shd", "shaders/fragment_light.shd");
-	quad_shader = Shader("shaders/quad_vertex.shd", "shaders/textured_quad_fragment.shd");
+	Shader obj_shader = create_shader_program("Obj Shader", "shaders/vertex_color_cube.shd", "shaders/fragment_multiple_lights.shd");
+	Shader light_shader = create_shader_program("Light Props Shader", "shaders/vertex_color_cube.shd", "shaders/fragment_light.shd");
+	quad_shader = create_shader_program("Billboard Shader", "shaders/quad_vertex.shd", "shaders/textured_quad_fragment.shd");
 
 
 	// Text shaders (GUI)
@@ -107,52 +105,63 @@ int main() {
 	load_text_textures("Consola.ttf", 12);
 
 	//______________ ..:;Creates scene;:.. ______________
+	u16 camera_id = camera_create(vec3(0.0, 2.0, 0.0), vec3(-1.0, 0.0, 0.0));
+	active_camera = cameraList[camera_id];
+
+
+	/*active_camera.Position = ;
+	camera_look_at(active_camera, v, true);*/
+
 	Scene demo_scene;
 	demo_scene.id = 1;
 
-	Model m_sponza = Model("C:/World Editor Assets/Models/crytek-sponza/sponza_nobanner.obj");
-	Entity sponza{
-		entity_counter,
-		++entity_counter,
-		&m_sponza,
-		&model_shader,
-		vec3(0,0,0)
-	};
-	sponza.matModel = scale(mat4identity, vec3(0.01f,0.01f,0.01f));
-	demo_scene.entities.push_back(sponza);
+	// -------------------------------------------------------------------------------------------------------------
+	//								Sponza
+	// -------------------------------------------------------------------------------------------------------------
+	//Model m_sponza = Model("C:/World Editor Assets/Models/crytek-sponza/sponza_nobanner.obj");
+	//Entity sponza{
+	//	entity_counter,
+	//	++entity_counter,
+	//	&m_sponza,
+	//	&model_shader,
+	//	vec3(0,0,0)
+	//};
+	//sponza.matModel = scale(mat4identity, vec3(0.01f,0.01f,0.01f));
+	//sponza.matModel = translate(sponza.matModel, vec3(-10.0f, -2.0f, -10.0f));
+	//demo_scene.entities.push_back(sponza);
 
 
 	// Quad model tests
-	unsigned int brick_texture = load_texture_from_file("brickwall.jpg", "assets/textures");
-	unsigned int brick_normal_texture = load_texture_from_file("brickwall_normal.jpg", "assets/textures");
-	Texture quad_wall_texture{
-		brick_texture,
-		"texture_diffuse",
-		"whatever"
-	};
-	Texture quad_wall_normal_texture{
-		brick_normal_texture,
-		"texture_normal",
-		"whatever"
-	};
-	vector<Texture> texture_vec;
-	texture_vec.push_back(quad_wall_texture);
-	texture_vec.push_back(quad_wall_normal_texture);
-	Mesh quad_mesh = Mesh(quad_vertex_vec, quad_vertex_indices, texture_vec);
-	Model quad_model(quad_mesh);
+	//unsigned int brick_texture = load_texture_from_file("brickwall.jpg", "assets/textures");
+	//unsigned int brick_normal_texture = load_texture_from_file("brickwall_normal.jpg", "assets/textures");
+	//Texture quad_wall_texture{
+	//	brick_texture,
+	//	"texture_diffuse",
+	//	"whatever"
+	//};
+	//Texture quad_wall_normal_texture{
+	//	brick_normal_texture,
+	//	"texture_normal",
+	//	"whatever"
+	//};
+	//vector<Texture> texture_vec;
+	//texture_vec.push_back(quad_wall_texture);
+	//texture_vec.push_back(quad_wall_normal_texture);
+	//Mesh quad_mesh = Mesh(quad_vertex_vec, quad_vertex_indices, texture_vec);
+	//Model quad_model(quad_mesh);
 
-	quad_model.textures_loaded = texture_vec;
+	//quad_model.textures_loaded = texture_vec;
 
-	Entity quad_wall{
-		entity_counter,
-		++entity_counter,
-		&quad_model,
-		&model_shader,
-		vec3(-10,0,-20),
-		vec3(0),
-		vec3(7.0f,10.0f,1.0f)
-	};
-	demo_scene.entities.push_back(quad_wall);
+	//Entity quad_wall{
+	//	entity_counter,
+	//	++entity_counter,
+	//	&quad_model,
+	//	&model_shader,
+	//	vec3(-10,0,-20),
+	//	vec3(0),
+	//	vec3(7.0f,10.0f,1.0f)
+	//};
+	//demo_scene.entities.push_back(quad_wall);
 
 	// LightSources
 	PointLight l1;
@@ -196,6 +205,20 @@ int main() {
 
 	active_scene = &demo_scene;
 
+	MeshModel capsule = import_wavefront_obj("parser_test.txt");
+	Mesh capmesh = Mesh(capsule.vertexes, capsule.indexes);
+	Model capmodel = Model(capmesh);
+	Entity capsuleEntity{
+		entity_counter,
+		++entity_counter,
+		&capmodel,
+		&model_shader,
+		vec3(0,0,0),
+		vec3(-90,0,0),
+		vec3(0.1f,0.1f,0.1f)
+	};
+	demo_scene.entities.push_back(capsuleEntity);
+
 
 	//______________ ..,;:Main Loop:;,.. ______________
 	while (!glfwWindowShouldClose(window))
@@ -226,6 +249,8 @@ int main() {
 		if (!moveMode)
 			render_scene_lights();
 
+		//editor_render_gui();
+
 		//if (render_pickray)
 		//	render_ray();
 
@@ -241,23 +266,18 @@ int main() {
 }
 
 
-void update_scene_objects() {
-	auto it = active_scene->entities.begin();
+inline void update_scene_objects() {
+	auto entity = active_scene->entities.begin();
 	auto end = active_scene->entities.end();
-	for (it; it < end; it++) {
-		Entity& entity_ref = *it;
-		update_entity(&entity_ref);
+	for (entity; entity < end; entity++) {
+		// Updates model matrix;	
+		/*mat4 model = translate(mat4identity, entity->position);
+		model = rotate(model, radians(entity->rotation.x), vec3(1.0f, 0.0f, 0.0f));
+		model = rotate(model, radians(entity->rotation.y), vec3(0.0f, 1.0f, 0.0f));
+		model = rotate(model, radians(entity->rotation.z), vec3(0.0f, 0.0f, 1.0f));
+		model = scale(model, entity->scale);
+		entity->matModel = model;*/
 	}
-}
-
-void update_entity(Entity* entity) {
-	// Updates model matrix;
-	mat4 model = translate(mat4identity, entity->position);
-	model = rotate(model, radians(entity->rotation.x), vec3(1.0f, 0.0f, 0.0f));
-	model = rotate(model, radians(entity->rotation.y), vec3(0.0f, 1.0f, 0.0f));
-	model = rotate(model, radians(entity->rotation.z), vec3(0.0f, 0.0f, 1.0f));
-	model = scale(model, entity->scale);
-	entity->matModel = model;
 }
 
 void setup_window(bool debug) {
@@ -283,10 +303,10 @@ void setup_window(bool debug) {
 
 	// Setups openGL viewport
 	glViewport(0, 0, viewportWidth, viewportHeight);
-	//glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-	//glfwSetCursorPosCallback(window, onMouseMove);
-	//glfwSetScrollCallback(window, onMouseScroll);
-	//glfwSetMouseButtonCallback(window, onMouseBtn);
+	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	glfwSetCursorPosCallback(window, onMouseMove);
+	glfwSetScrollCallback(window, onMouseScroll);
+	glfwSetMouseButtonCallback(window, onMouseBtn);
 
 	if (debug) {
 		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
@@ -387,12 +407,12 @@ void render_model(Entity ent, glm::vec3 lightPos[], glm::vec3 lightRgb[]) {
 }
 
 void render_scene() {
-	vector<Entity>::iterator entity_ptr = active_scene->entities.begin();
+	auto entity_ptr = active_scene->entities.begin();
 	for (entity_ptr; entity_ptr != active_scene->entities.end(); entity_ptr++) {
 		entity_ptr->shader->use();
-		vector<PointLight>::iterator point_light_ptr = active_scene->pointLights.begin();
+		auto point_light_ptr = active_scene->pointLights.begin();
 		int point_light_count = 0;
-		for (point_light_ptr;point_light_ptr != active_scene->pointLights.end();point_light_ptr++) {
+		for (point_light_ptr; point_light_ptr != active_scene->pointLights.end(); point_light_ptr++) {
 			PointLight point_light = *point_light_ptr;
 			string uniform_name = "pointLights[" + to_string(point_light_count) + "]";
 			entity_ptr->shader->setFloat3(uniform_name + ".position", point_light.position);
@@ -404,21 +424,23 @@ void render_scene() {
 			entity_ptr->shader->setFloat(uniform_name + ".quadratic", point_light.intensity_quadratic);
 			point_light_count++;
 		}
-		entity_ptr->shader->setInt("num_point_lights", point_light_count);
-		entity_ptr->shader->setInt("num_directional_light", 0);
-		entity_ptr->shader->setInt("num_spot_lights", 0);
-		entity_ptr->shader->setMatrix4("view", active_camera.View4x4);
-		entity_ptr->shader->setMatrix4("projection", active_camera.Projection4x4);
-		entity_ptr->shader->setFloat("shininess", global_shininess);
-		entity_ptr->shader->setFloat3("viewPos", active_camera.Position);
-		mat4 model_matrix = scale(mat4identity, vec3(0.01,0.01,0.01));
-		entity_ptr->shader->setMatrix4("model", model_matrix);
+		entity_ptr->shader->setInt("num_point_lights"		,point_light_count);
+		entity_ptr->shader->setInt("num_directional_light"	, 0);
+		entity_ptr->shader->setInt("num_spot_lights"		, 0);
+		entity_ptr->shader->setMatrix4("view"				, active_camera.View4x4);
+		entity_ptr->shader->setMatrix4("projection"			, active_camera.Projection4x4);
+		entity_ptr->shader->setFloat("shininess"			, global_shininess);
+		entity_ptr->shader->setFloat3("viewPos"				, active_camera.Position);
+		//mat4 model_matrix = scale(mat4identity				, vec3(0.01,0.01,0.01));
+		entity_ptr->shader->setMatrix4("model"				, entity_ptr->matModel);
 		entity_ptr->model3d->Draw(*entity_ptr->shader);
 	}
 }
 
 void processInput(GLFWwindow* window)
 {
+	//Todo: get a real input toggling system in place
+	// something that allows you to wait for release to get in the if again
 	float cameraSpeed = deltaTime * active_camera.Acceleration;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_RELEASE) {
 
@@ -463,6 +485,13 @@ void processInput(GLFWwindow* window)
 		}
 		if (glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE && GUI_btn_down)
 			GUI_btn_down = false;
+
+		if (glfwGetKey(window, GLFW_KEY_1) == GLFW_PRESS) {
+			active_camera = cameraList[0];
+		}
+		if (glfwGetKey(window, GLFW_KEY_2) == GLFW_PRESS) {
+			active_camera = cameraList[1];
+		}
 
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS && glfwGetKey(window, GLFW_KEY_M) == GLFW_PRESS && !keyComboPressed) {

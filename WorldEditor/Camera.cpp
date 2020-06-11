@@ -40,4 +40,10 @@ void camera_look_at(Camera& camera, glm::vec3 position, bool isPosition) {
 	camera.Front = glm::normalize(camera.Front);
 }
 
-
+int camera_create(glm::vec3 initialPosition, glm::vec3 lookVector) {
+	Camera new_camera;
+	new_camera.Position = initialPosition;
+	camera_look_at(new_camera, lookVector, true);
+	cameraList.push_back(new_camera);
+	return cameraList.size();
+}

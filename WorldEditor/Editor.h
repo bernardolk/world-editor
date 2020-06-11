@@ -25,11 +25,11 @@ void editor_loop();
 float ray_triangle_intersection(glm::vec3 ray_origin, glm::vec3 ray_dir, glm::vec3 A, glm::vec3 B, glm::vec3 C, bool check_both_sides = false);
 void editor_create_grid(int gridx, int gridy, float gridl);
 void show_light_controls(int lightId);
-void check_pickray_collision();
+void check_pickray_collision(glm::vec3 pickray);
 void show_entity_controls(int entityId);
-void cast_pickray();
-float check_box_collision(int entityIndex);
-bool check_collision(Entity entity);
+glm::vec3 cast_pickray(Camera activeCamera);
+float check_box_collision(int entityIndex, glm::vec3 pickray);
+bool check_collision(Entity entity, glm::vec3 pickray);
 void load_text_textures(std::string font, int size);
 void editor_update();
 void render_bounding_box(int entityId);
@@ -42,8 +42,8 @@ bool keyComboPressed = false;
 bool show_GUI = false;
 
 
-unsigned int buf, vao, vbo, entity_counter = 0;
-unsigned int quad_vao, quad_vbo, quad_ebo, quad_lightbulb_texture;
+u32 buf, vao, vbo, entity_counter = 0;
+u32 quad_vao, quad_vbo, quad_ebo, quad_lightbulb_texture;
 
 
 using namespace std;
@@ -54,7 +54,7 @@ float viewport_width;
 GLuint text_VAO, text_VBO;
 
 // Temporary, for the editor bounding boxes
-unsigned int bounding_box_indices[] = {
+u32 bounding_box_indices[] = {
 	//Front face
 	0,1,11,
 	11,9,0,
@@ -90,18 +90,18 @@ vector<Vertex> quad_vertex_vec = {
 };
 
 
-unsigned int quad_indices[] = {
+u32 quad_indices[] = {
 	0,1,2,
 	2,3,0
 };
 
-vector<unsigned int> quad_vertex_indices = { 0,1,2,2,3,0 };
+vector<u32> quad_vertex_indices = { 0,1,2,2,3,0 };
 
 glm::vec3 bg_color(0.008f, 0.314f, 0.275f);
 Shader grid_shader;
 Shader bounding_box_shader;
 Shader text_shader;
-unsigned int editor_textures[15];
+u32 editor_textures[15];
 struct EditorControls {
 	bool camera_align_x = false;
 	bool camera_align_y = false;
@@ -111,9 +111,9 @@ struct EditorControls {
 	bool is_mouse_drag = false;
 	double mouse_btn_down_x;
 	double mouse_btn_down_y;
-	unsigned int press_release_toggle = 0;
+	u32 press_release_toggle = 0;
 } editor_controls;
-unsigned int pt_vao;
+u32 pt_vao;
 ImGuiStyle* imStyle;
 static imgui_ext::file_browser_modal filebrowser_model("Model", "C:\\World Editor Assets\\Models", "obj");
 static imgui_ext::file_browser_modal filebrowser_scene("Scene", "C:\\World Editor Assets\\Scenes");
@@ -126,7 +126,7 @@ bool render_pickray = false;
 // Function declarations
 string format_float_tostr(float num, int precision);
 void render_text(std::string text, float x, float y, float scale, glm::vec3 color);
-float check_light_collision(int lightIndex);
+float check_light_collision(int lightIndex, glm::vec3 pickray);
 
 //entity control window
 struct EntityControls {
@@ -149,9 +149,9 @@ struct Character {
 map<GLchar, Character> Characters; // GUI character set
 
 		// --- Pickray ---
-glm::vec3 pickray_collision_point;
-glm::vec3 pickray_direction;
-bool pickray_collision_test;
+//glm::vec3 pickray_collision_point;
+//glm::vec3 pickray_direction;
+//bool pickray_collision_test;
 
 
 
@@ -185,8 +185,10 @@ void editor_loop() {
 		show_light_controls(entity_controls.selected_light);
 	}
 
-	if (pickray_collision_test)
-		check_pickray_collision();
+	/*if (pickray_collision_test)
+		check_pickray_collision();*/
+
+	editor_render_gui(active_camera);
 
 }
 
@@ -195,6 +197,10 @@ void editor_initialize(float viewportWidth, float viewportHeight) {
 	// Setup mouse and camera initial settings
 	lastXMouseCoord = viewportWidth / 2;
 	lastYMouseCoord = viewportHeight / 2;
+	//@Attention!: there should be a system that updates mouse coordinates at every frame
+	// but it should be independent of anything else, it just makes available the values to other
+	// editor methods
+	resetMouseCoords = true;
 
 	viewport_width = viewportWidth;
 	viewport_height = viewportHeight;
@@ -219,9 +225,9 @@ void editor_initialize(float viewportWidth, float viewportHeight) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	//load shaders
-	grid_shader = Shader("shaders/editor_grid_vertex.shd", "shaders/editor_grid_fragment.shd");
-	bounding_box_shader = Shader("shaders/bounding_box_vertex.shd", "shaders/bounding_box_fragment.shd");
-	text_shader = Shader("shaders/vertex_text.shd", "shaders/fragment_text.shd");
+	grid_shader = create_shader_program("Grid Shader", "shaders/editor_grid_vertex.shd", "shaders/editor_grid_fragment.shd");
+	bounding_box_shader = create_shader_program("Bounding Box Shader", "shaders/bounding_box_vertex.shd", "shaders/bounding_box_fragment.shd");
+	text_shader = create_shader_program("Text Shader", "shaders/vertex_text.shd", "shaders/fragment_text.shd");
 
 	//generate text buffers
 	glGenVertexArrays(1, &text_VAO);
@@ -340,10 +346,10 @@ void editor_process_input_mouse_move(double xpos, double ypos) {
 				else return false;
 				});
 			if (it != end) {
-				cast_pickray();
-				float t_y = (entity->position.y - active_camera.Position.y) / pickray_direction.y;
-				entity->position.x = active_camera.Position.x + t_y * pickray_direction.x;
-				entity->position.z = active_camera.Position.z + t_y * pickray_direction.z;
+				glm::vec3 pickray = cast_pickray(active_camera);
+				float t_y = (entity->position.y - active_camera.Position.y) / pickray.y;
+				entity->position.x = active_camera.Position.x + t_y * pickray.x;
+				entity->position.z = active_camera.Position.z + t_y * pickray.z;
 			}
 		}
 		else if (entity_controls.selected_light != -1) {
@@ -356,10 +362,10 @@ void editor_process_input_mouse_move(double xpos, double ypos) {
 				else return false;
 				});
 			if (it != end) {
-				cast_pickray();
-				float t_y = (entity->position.y - active_camera.Position.y) / pickray_direction.y;
-				entity->position.x = active_camera.Position.x + t_y * pickray_direction.x;
-				entity->position.z = active_camera.Position.z + t_y * pickray_direction.z;
+				glm::vec3 pickray = cast_pickray(active_camera);
+				float t_y = (entity->position.y - active_camera.Position.y) / pickray.y;
+				entity->position.x = active_camera.Position.x + t_y * pickray.x;
+				entity->position.z = active_camera.Position.z + t_y * pickray.z;
 			}
 		}
 	}
@@ -388,9 +394,9 @@ void editor_process_input_mouse_btn(int button, int action) {
 					editor_controls.mouse_btn_down_x = currentMouseX;
 					editor_controls.mouse_btn_down_y = currentMouseY;
 
-					cast_pickray();
+					check_pickray_collision(cast_pickray(active_camera));
 
-					pickray_collision_test = true;
+					//pickray_collision_test = true;
 
 					editor_controls.press_release_toggle = GLFW_PRESS;
 				}
@@ -427,8 +433,6 @@ void editor_process_input_mouse_btn(int button, int action) {
 }
 
 void editor_render_gui(Camera& camera) {
-	if (show_GUI) {
-
 		// render GUI text
 		{
 			// text render
@@ -495,8 +499,6 @@ void editor_render_gui(Camera& camera) {
 
 			}
 		} // render GUI controls
-	}
-
 }
 
 void show_entity_controls(int entityId) {
@@ -591,7 +593,7 @@ void render_bounding_box(int entityId) {
 
 		glBindVertexArray(entity->model3d->bb_vao);
 
-		//unsigned int bb_ebo;
+		//u32 bb_ebo;
 		glLineWidth(2.0f);
 		//glGenBuffers(1, &bb_ebo);
 		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, bb_ebo);
@@ -607,7 +609,7 @@ void editor_create_grid(int gridx, int gridy, float scale) {
 	float quad[12] = { 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0 };
 
 	// @insane! creating a new buffer each frame... wtf
-	/*unsigned int gridVAO, gridVBO;
+	/*u32 gridVAO, gridVBO;
 	glGenVertexArrays(1, &gridVAO);
 	glGenBuffers(1, &gridVBO);
 	glBindVertexArray(gridVAO);
@@ -683,22 +685,20 @@ void show_light_controls(int lightId) {
 // ..;: Collision :;..
 
 // Returns the direction in world coordinates of a ray cast from a click on screen
-void cast_pickray() {
+glm::vec3 cast_pickray(Camera activeCamera) {
 
 	float screenX_normalized = (currentMouseX - viewport_width / 2) / (viewport_width / 2);
 	float screenY_normalized = -1 * (currentMouseY - viewport_height / 2) / (viewport_height / 2);
 
 	glm::vec4 ray_clip(screenX_normalized, screenY_normalized, -1.0, 1.0);
-	glm::mat4 inv_view = glm::inverse(active_camera.View4x4);
-	glm::mat4 inv_proj = glm::inverse(active_camera.Projection4x4);
+	glm::mat4 inv_view = glm::inverse(activeCamera.View4x4);
+	glm::mat4 inv_proj = glm::inverse(activeCamera.Projection4x4);
 	glm::vec3 ray_eye_3 = (inv_proj * ray_clip);
 	glm::vec4 ray_eye(ray_eye_3.x, ray_eye_3.y, -1.0, 0.0);
-	glm::vec3 ray_world = glm::normalize(inv_view * ray_eye);
-
-	pickray_direction = ray_world;
+	return glm::normalize(inv_view * ray_eye);
 }
 
-float check_box_collision(int entityIndex) {
+float check_box_collision(int entityIndex, glm::vec3 pickray) {
 	Entity entity = active_scene->entities[entityIndex];
 	vector<float> bb = entity.model3d->boundingBox;
 	int stride = 3;
@@ -721,7 +721,7 @@ float check_box_collision(int entityIndex) {
 			bb[bounding_box_indices[bbi + 2] * stride + 1],
 			bb[bounding_box_indices[bbi + 2] * stride + 2], 1.0f);
 
-		float dist = ray_triangle_intersection(active_camera.Position, pickray_direction, A, B, C, true);
+		float dist = ray_triangle_intersection(active_camera.Position, pickray, A, B, C, true);
 
 		if (dist > 0 && dist < shortest_distance) {
 			shortest_distance = dist;
@@ -729,7 +729,7 @@ float check_box_collision(int entityIndex) {
 	}
 
 	if (shortest_distance != numeric_limits<float>::max()) {
-		pickray_collision_point = active_camera.Position + shortest_distance * pickray_direction;
+		glm::vec3 pickray_collision_point = active_camera.Position + shortest_distance * pickray;
 		return shortest_distance;
 	}
 	else {
@@ -737,7 +737,7 @@ float check_box_collision(int entityIndex) {
 	}
 }
 
-float check_light_collision(int lightIndex) {
+float check_light_collision(int lightIndex, glm::vec3 pickray) {
 	PointLight point_light = active_scene->pointLights[lightIndex];
 
 	//@FixMe: This should be inside the light struct or something similar and not be calculated in the render call nor here!
@@ -754,27 +754,27 @@ float check_light_collision(int lightIndex) {
 	glm::vec3 A1 = model_m * glm::vec4(quad[0], quad[1], quad[2], 1.0f);
 	glm::vec3 B1 = model_m * glm::vec4(quad[5], quad[6], quad[7], 1.0f);
 	glm::vec3 C1 = model_m * glm::vec4(quad[10], quad[11], quad[12], 1.0f);
-	float dist = ray_triangle_intersection(active_camera.Position, pickray_direction, A1, B1, C1, true);
+	float dist = ray_triangle_intersection(active_camera.Position, pickray, A1, B1, C1, true);
 
 	if (dist > 0) {
-		pickray_collision_point = active_camera.Position + dist * pickray_direction;
+		glm::vec3 pickray_collision_point = active_camera.Position + dist * pickray;
 		return dist;
 	}
 
 	glm::vec3 A2 = model_m * glm::vec4(quad[10], quad[11], quad[12], 1.0f);
 	glm::vec3 B2 = model_m * glm::vec4(quad[15], quad[16], quad[17], 1.0f);
 	glm::vec3 C2 = model_m * glm::vec4(quad[0], quad[1], quad[2], 1.0f);
-	dist = ray_triangle_intersection(active_camera.Position, pickray_direction, A2, B2, C2, true);
+	dist = ray_triangle_intersection(active_camera.Position, pickray, A2, B2, C2, true);
 
 	if (dist > 0) {
-		pickray_collision_point = active_camera.Position + dist * pickray_direction;
+		glm::vec3 pickray_collision_point = active_camera.Position + dist * pickray;
 		return dist;
 	}
 
 	return -1;
 }
 
-bool check_collision(Entity entity) {
+bool check_collision(Entity entity, glm::vec3 pickray) {
 
 	//@optimization: can calculate on mesh load it's center and test ray-center distance so to try avoiding
 	// testing collision again far away meshes inside model
@@ -787,12 +787,12 @@ bool check_collision(Entity entity) {
 		glm::vec3 B;
 		glm::vec3 C;
 		int counter = 0;
-		vector<unsigned int>::iterator index = mesh_v.indices.begin();
+		vector<u32>::iterator index = mesh_v.indices.begin();
 
 		//@Attention: this wont work if the model is rotated in world space
 
 		for (index; index != mesh_v.indices.end(); index++) {
-			unsigned int i = *index;
+			u32 i = *index;
 			if (counter == 0) {
 				A = mesh_v.vertices[i].Position;
 				A = glm::translate(mat4identity, entity.position) * glm::vec4(A.x, A.y, A.z, 1.0);
@@ -806,7 +806,7 @@ bool check_collision(Entity entity) {
 			else if (counter == 2) {
 				C = mesh_v.vertices[i].Position;
 				C = glm::translate(mat4identity, entity.position) * glm::vec4(A.x, A.y, A.z, 1.0);
-				int test = ray_triangle_intersection(active_camera.Position, pickray_direction, A, B, C);
+				int test = ray_triangle_intersection(active_camera.Position, pickray, A, B, C);
 				if (test > 0)
 					return true;
 				counter = 0;
@@ -816,13 +816,13 @@ bool check_collision(Entity entity) {
 	return false;
 }
 
-void check_pickray_collision() {
+void check_pickray_collision(glm::vec3 pickray) {
 	auto entity_ptr = active_scene->entities.begin();
 	int collided_entity = -1;	// point to first entity just to initialize it
 	int collided_light = -1;
 	float entity_closer_distance = numeric_limits<float>::max();
 	for (entity_ptr; entity_ptr != active_scene->entities.end(); entity_ptr++) {
-		float dist = check_box_collision(entity_ptr->index);
+		float dist = check_box_collision(entity_ptr->index, pickray);
 		if (entity_closer_distance > dist && dist > 0) {
 			collided_entity = entity_ptr->id;
 			entity_closer_distance = dist;
@@ -835,7 +835,7 @@ void check_pickray_collision() {
 	for (pl_ptr; pl_ptr != pl_end; pl_ptr++) {
 		//@FixMe: passing index to collision call. This is a general problem, do i pass index or Ids?
 		// Adapt entity structs and methods to what is more inteligent
-		float dist = check_light_collision(pl_ptr - active_scene->pointLights.begin());
+		float dist = check_light_collision(pl_ptr - active_scene->pointLights.begin(), pickray);
 		if (entity_closer_distance > dist && dist > 0) {
 			collided_light = pl_ptr->id;
 			entity_closer_distance = dist;
@@ -863,7 +863,7 @@ void check_pickray_collision() {
 		entity_controls.selected_light = -1;
 	}
 
-	pickray_collision_test = false;
+	//pickray_collision_test = false;
 }
 
 float ray_triangle_intersection(glm::vec3 ray_origin, glm::vec3 ray_dir, glm::vec3 A, glm::vec3 B, glm::vec3 C, bool check_both_sides) {
