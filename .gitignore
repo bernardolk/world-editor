@@ -8,4 +8,6 @@ WorldEditor/Assets
 *.pdb
 *.exe
 *.msi
-/x64
+WorldEditor/x64
+WorldEditor/Debug
+x64/
